@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Search - Advanced Text Search Engine{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-body">
+                <h1 class="text-center mb-4">
+                    <i class="fas fa-search me-2"></i>Advanced Text Search
+                </h1>
+                
+                <form method="post" enctype="multipart/form-data" action="{{ url_for('result') }}" id="searchForm">
+                    <div class="mb-4">
+                        <label for="file" class="form-label">Choose a file to search:</label>
+                        <div class="custom-file-upload" id="dropZone">
+                            <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
+                            <p class="mb-0">Drag and drop your file here or</p>
+                            <input type="file" class="form-control" name="file" id="file" accept=".txt,.pdf,.docx">
+                        </div>
+                    </div>
+
+                    <div class="search-options">
+                        <div class="mb-3">
+                            <label for="keyword" class="form-label">Search Keyword:</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="keyword" id="keyword" 
+                                       placeholder="Enter keyword to search" required>
+                                <button class="btn btn-outline-secondary" type="button" 
+                                        data-bs-toggle="collapse" data-bs-target="#searchOptions">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="collapse" id="searchOptions">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="caseSensitive" id="caseSensitive">
+                                        <label class="form-check-label" for="caseSensitive">
+                                            Case Sensitive Search
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="regexSearch" id="regexSearch">
+                                        <label class="form-check-label" for="regexSearch">
+                                            Use Regular Expression
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="fuzzySearch" id="fuzzySearch">
+                                        <label class="form-check-label" for="fuzzySearch">
+                                            Fuzzy Search
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="wildcardSearch" id="wildcardSearch">
+                                        <label class="form-check-label" for="wildcardSearch">
+                                            Wildcard Search
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3" id="fuzzyOptions" style="display: none;">
+                                <label for="maxDistance" class="form-label">Maximum Distance:</label>
+                                <input type="range" class="form-range" name="maxDistance" id="maxDistance" 
+                                       min="1" max="5" value="2">
+                                <div class="d-flex justify-content-between">
+                                    <span>1</span>
+                                    <span>2</span>
+                                    <span>3</span>
+                                    <span>4</span>
+                                    <span>5</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i>Search
+                        </button>
+                    </div>
+                </form>
+
+                <div class="preview-container mt-4" id="previewContainer" style="display: none;">
+                    <h5>File Preview:</h5>
+                    <div id="filePreview" class="border p-3 bg-white"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // File preview functionality
+    document.getElementById('file').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const previewContainer = document.getElementById('previewContainer');
+            const filePreview = document.getElementById('filePreview');
+            
+            if (file.type === 'text/plain') {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    filePreview.textContent = e.target.result.substring(0, 500) + '...';
+                    previewContainer.style.display = 'block';
+                };
+                reader.readAsText(file);
+            } else {
+                filePreview.textContent = 'Preview not available for this file type';
+                previewContainer.style.display = 'block';
+            }
+        }
+    });
+
+    // Drag and drop functionality
+    const dropZone = document.getElementById('dropZone');
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight(e) {
+        dropZone.classList.add('border-primary');
+    }
+
+    function unhighlight(e) {
+        dropZone.classList.remove('border-primary');
+    }
+
+    dropZone.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        document.getElementById('file').files = files;
+        const event = new Event('change');
+        document.getElementById('file').dispatchEvent(event);
+    }
+
+    // Toggle fuzzy search options
+    document.getElementById('fuzzySearch').addEventListener('change', function(e) {
+        document.getElementById('fuzzyOptions').style.display = e.target.checked ? 'block' : 'none';
+    });
+
+    // Validate search options
+    document.getElementById('searchForm').addEventListener('submit', function(e) {
+        const regexSearch = document.getElementById('regexSearch').checked;
+        const fuzzySearch = document.getElementById('fuzzySearch').checked;
+        const wildcardSearch = document.getElementById('wildcardSearch').checked;
+
+        if ((regexSearch && fuzzySearch) || (regexSearch && wildcardSearch) || (fuzzySearch && wildcardSearch)) {
+            alert('Please select only one search type at a time.');
+            e.preventDefault();
+        }
+    });
+</script>
+{% endblock %}

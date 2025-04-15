@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Results - Advanced Text Search Engine{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-search me-2"></i>Search Results
+                    </h1>
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-2"></i>New Search
+                    </a>
+                </div>
+
+                <div class="result-stats mb-4">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <p class="mb-0"><strong>Keyword:</strong> <span class="text-primary">{{ keyword }}</span></p>
+                        </div>
+                        <div class="col-md-3">
+                            <p class="mb-0"><strong>Matches Found:</strong> <span class="text-success">{{ results|length }}</span></p>
+                        </div>
+                        <div class="col-md-3">
+                            <p class="mb-0"><strong>Search Time:</strong> <span class="text-info">{{ search_time }}ms</span></p>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="exportResults()">
+                                <i class="fas fa-download me-2"></i>Export Results
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {% if results %}
+                    <div class="search-results">
+                        {% for result in results %}
+                            <div class="result-item">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge bg-primary">Match {{ loop.index }}</span>
+                                    <span class="text-muted">Position: {{ result.position }}</span>
+                                </div>
+                                <div class="context">
+                                    <span class="line-number">{{ result.position }}</span>
+                                    {{ result.context|replace(result.match, '<span class="highlight">' + result.match + '</span>')|safe }}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>No matches found for "{{ keyword }}"
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function exportResults() {
+        const results = {{ results|tojson|safe }};
+        const keyword = "{{ keyword }}";
+        const searchTime = {{ search_time }};
+        
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Search Results for: " + keyword + "\n";
+        csvContent += "Search Time: " + searchTime + "ms\n";
+        csvContent += "Total Matches: " + results.length + "\n\n";
+        csvContent += "Position,Match,Context\n";
+        
+        results.forEach(result => {
+            csvContent += result.position + "," + 
+                         result.match + "," + 
+                         result.context.replace(/,/g, ";") + "\n";
+        });
+        
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "search_results.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Search History - Advanced Text Search Engine{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow">
+            <div class="card-body">
+                <h1 class="text-center mb-4">
+                    <i class="fas fa-history me-2"></i>Search History
+                </h1>
+
+                {% if searches %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Keyword</th>
+                                    <th>File</th>
+                                    <th>Matches</th>
+                                    <th>Time (ms)</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for search in searches %}
+                                    <tr>
+                                        <td>{{ search.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                        <td>{{ search.keyword }}</td>
+                                        <td>{{ search.file_name }}</td>
+                                        <td>{{ search.results_count }}</td>
+                                        <td>{{ search.search_time }}</td>
+                                        <td>
+                                            <a href="{{ url_for('index') }}?keyword={{ search.keyword }}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-redo me-1"></i>Repeat
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-4">
+                        <h5>Search Statistics</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Total Searches</h6>
+                                        <p class="card-text display-6">{{ searches|length }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Average Search Time</h6>
+                                        <p class="card-text display-6">
+                                            {{ (searches|sum(attribute='search_time') / searches|length)|round(2) }}ms
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Total Matches</h6>
+                                        <p class="card-text display-6">{{ searches|sum(attribute='results_count') }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>No search history found.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
